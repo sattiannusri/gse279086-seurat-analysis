@@ -1,0 +1,155 @@
+# ============================================================================
+# Single-cell RNA-seq Analysis of GSE279086 using Seurat
+# Dataset: GSE279086
+# Description: Preprocessing
+# ============================================================================
+
+
+# ============================================================================
+# Loading libraries
+# ============================================================================
+```{r}
+library(Seurat)
+library(SeuratDisk)
+library(dplyr)
+library(R.utils)  
+library(ggplot2)
+library(ggExtra)
+library(RColorBrewer)
+library(openxlsx)
+library(dplyr)
+library(scales)
+library(HGNChelper)
+library(dittoSeq)
+library(harmony)
+library(batchelor)
+library(zellkonverter)
+library(SingleCellExperiment)
+```
+
+
+# ============================================================================
+# Data acquisition and Organization
+# ============================================================================
+```{r}
+baseDir   <- "/kaggle/working"
+rawDir    <- file.path(baseDir,"raw")
+inputDir  <- file.path(baseDir, "input")
+outputDir <- file.path(baseDir, "output")
+plotDir   <- file.path(baseDir, "plots")
+
+dir.create(rawDir, showWarnings = FALSE)
+dir.create(inputDir,  showWarnings = FALSE)
+dir.create(outputDir, showWarnings = FALSE)
+dir.create(plotDir,   showWarnings = FALSE)
+
+system(
+  "curl -L 'https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE279086&format=file' -o GSE279086_RAW.tar"
+)
+untar(tarfile = "GSE279086_RAW.tar", exdir=rawDir)
+```
+
+
+# ============================================================================
+# Data Preparation
+# ============================================================================
+```{python}
+import os, glob, shutil
+
+raw_dir = '/kaggle/working/raw'
+out_dir = '/kaggle/working/input'
+os.makedirs(out_dir, exist_ok=True)
+
+# collect all raw files (exclude processed)
+files = [f for f in os.listdir(raw_dir)
+         if f.endswith('.gz') and 'processed' not in f]
+
+gsm_map = {}
+
+# group by GSM ID (prefix before first underscore)
+for f in files:
+    gsm = f.split('_')[0]
+    gsm_map.setdefault(gsm, []).append(f)
+
+for gsm, flist in gsm_map.items():
+    dst = os.path.join(out_dir, gsm)
+    os.makedirs(dst, exist_ok=True)
+
+    matrix   = [f for f in flist if 'matrix.mtx' in f]
+    features = [f for f in flist if 'features.tsv' in f]
+    barcodes = [f for f in flist if 'barcodes.tsv' in f]
+
+    if not (len(matrix)==len(features)==len(barcodes)==1):
+        raise RuntimeError(f'File mismatch in {gsm}')
+
+    shutil.copy(os.path.join(raw_dir, matrix[0]),   os.path.join(dst, 'matrix.mtx.gz'))
+    shutil.copy(os.path.join(raw_dir, features[0]), os.path.join(dst, 'features.tsv.gz'))
+    shutil.copy(os.path.join(raw_dir, barcodes[0]), os.path.join(dst, 'barcodes.tsv.gz'))
+print(f'Prepared {len(gsm_map)} GSM folders (raw only)')
+EOF",
+intern = TRUE
+)
+```
+
+
+# ============================================================================
+# Seurat object construction
+# ============================================================================
+```{r}
+sample_dirs <- list.dirs(inputDir, recursive = FALSE, full.names = TRUE)
+
+seurat_list <- lapply(sample_dirs, function(sdir) {
+
+  gsm_id <- basename(sdir)
+
+  counts <- Read10X(data.dir = sdir)
+
+  obj <- CreateSeuratObject(
+    counts = counts,
+    project = "GSE279086",
+    min.cells = 3,
+    min.features = 200
+  )
+
+  obj$orig.ident <- gsm_id
+  obj
+})
+
+names(seurat_list) <- basename(sample_dirs)
+length(seurat_list)
+```
+
+
+# ============================================================================
+# Check for duplicated features
+# ============================================================================
+```{r}
+sapply(seurat_list, function(obj) {
+  sum(duplicated(rownames(GetAssayData(obj, layer = "counts"))))
+})
+clean_seurat_list <- seurat_list
+print(names(clean_seurat_list))
+```
+
+
+# ============================================================================
+# Save combined Seurat object
+# ============================================================================
+```{r}
+seurat_combined <- merge(clean_seurat_list[[1]], y = clean_seurat_list[-1], add.cell.ids = names(clean_seurat_list))
+unique(seurat_combined$orig.ident)
+saveRDS(seurat_combined, file =  paste0(outputDir,"GSE279086_seurat_combined.rds"))
+```
+
+
+# ============================================================================
+# Explore Seurat object
+# ============================================================================
+```{r}
+class(seurat_combined)            
+Assays(seurat_combined)           
+DefaultAssay(seurat_combined)     
+dim(seurat_combined)  
+rownames(seurat_combined)[1:5]
+colnames(seurat_combined)[1:5]
+```
