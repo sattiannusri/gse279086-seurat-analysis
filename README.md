@@ -14,14 +14,14 @@ The objectives of this analysis are to:
 7. Interpret cellular composition based on gene expression patterns
 
 # Dataset Information
-Accession Number: GSE279086
-Data Repository: NCBI Gene Expression Omnibus (GEO)
-Sequencing Type: Single-cell RNA sequencing
-Organism: Homo sapiens
-Data Format: Raw count matrices
+- Accession Number: GSE279086
+- Data Repository: NCBI Gene Expression Omnibus (GEO)
+- Sequencing Type: Single-cell RNA sequencing
+- Organism: Homo sapiens
+- Data Format: Raw count matrices
 
 # Computational Environment
-Platform: Kaggle R Notebook
-Programming Language: R
-R Version: 4.4.0
-Core Analysis Package: Seurat (v5.1.0)
+- Platform: Kaggle R Notebook
+- Programming Language: R
+- R Version: 4.4.0
+- Core Analysis Package: Seurat (v5.1.0)
