@@ -22,36 +22,40 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Data Type: Single-cell RNA sequencing
 
 # Repository Organization
+
 - scripts/ – Source code files used for analysis (.Rmd, ipynb and notebook scripts).
 - script_runs/ – Rendered HTML reports showing executed code and results.
 - plots/ – Figures generated during the analysis workflow.
 - tables/ – Tabular outputs including cell proportions and marker gene results.
 
 # Analysis Workflow
-1. Preprocessing
+
+## Preprocessing
 - Seurat object creation and metadata preparation
 - Initial data handling prior to filtering
 
-2. Quality Control & Batch Correction
+## Quality Control & Batch Correction
 - Cell filtering and normalization
 - PCA and elbow plot assessment
 - Harmony-based batch correction
 - UMAP visualization before and after integration
 
-3. Cell Type Annotation
+## Cell Type Annotation
 - Automated cell type annotation
 - Calculation of cell-type proportions by condition
 
-4. Differential Expression & Reactome Analysis
+## Differential Expression & Reactome Analysis
 - Identification of unique marker genes
 - Differential expression analysis (T1D vs Control)
 - Reactome pathway enrichment
 
 # Computational Environment
+
 - Platform: Kaggle R Notebook
 - R Version: 4.4.0
 - Seurat Version: 5.1.0
 
 # Key Packages
+
 Seurat, Seuratdisk, Celltypist, Zellkonverter, Harmony, dplyr, ggplot2, tidyverse, HGNChelper, dittoseq, batchelor, SingleCellExperiment,ReactomePA, clusterProfiler
 
