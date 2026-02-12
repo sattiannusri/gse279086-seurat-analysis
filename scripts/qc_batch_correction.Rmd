@@ -105,7 +105,7 @@ condition_df <- data.frame(
   ),
   stringsAsFactors = FALSE
 )
-
+# Stop if number of rows of condition_df is not same as unique number of orig.ident of condition_df
 stopifnot(nrow(condition_df) == length(unique(condition_df$orig.ident)))
 stopifnot(length(condition_df$orig.ident) == length(condition_df$condition))
 
@@ -114,8 +114,8 @@ seurat_combined$condition <-
     match(seurat_combined$orig.ident, condition_df$orig.ident)
   ]
 table(seurat_combined$condition)
-cat("Number of NaN is:", sum(is.na(seurat_combined$condition)), "\n")
-cat("Number of control samples is:", length(unique(seurat_combined$orig.ident[seurat_combined$condition == "Control"])), "\n")
+cat("Number of NaN is:", sum(is.na(seurat_combined$condition)), "\n") # Checks for NaN if there was no mapping 
+cat("Number of control samples is:", length(unique(seurat_combined$orig.ident[seurat_combined$condition == "Control"])), "\n") # Checks the number of control samples
 cat("Number of T1D samples is:", length(unique(seurat_combined$orig.ident[seurat_combined$condition == "T1D"])), "\n")
 ```
 
@@ -128,12 +128,12 @@ cat("Number of T1D samples is:", length(unique(seurat_combined$orig.ident[seurat
 seurat_combined[["percent.mt"]] <- PercentageFeatureSet(
   seurat_combined,
   pattern = "^MT-"
-)
+) # Calculates mitochondrial RNA %
 
 seurat_combined[["percent.rb"]] <- PercentageFeatureSet(
   seurat_combined,
   pattern = "^RPL|^RPS"
-)
+) # Calculates ribosomal RNA %
 
 colnames(seurat_combined@meta.data)
 
@@ -148,6 +148,7 @@ summary(seurat_combined$percent.rb)
 ```{r}
 study_id <- "GSE279086"
 
+# Adds % mt and rb to metadata
 seurat_combined <- AddMetaData(seurat_combined, metadata = seurat_combined$orig.ident, col.name = "Sample")
 
 save_violin_plots_separate <- function(
@@ -214,15 +215,16 @@ fil_nCounts <- function(seurat_obj, threshold_mahalanobis){
   colnames(ncounts_data) <- "nCount_RNA"
   
   mahalanobis_dist <- mahalanobis(
-    x = ncounts_data,
+    x = ncounts_data,       # calculates mahalanobis distance from counts using mean and covariance
     center = colMeans(ncounts_data),
     cov = cov(ncounts_data)
   )
   
-  seurat_obj$mahal_dist_nCount <- mahalanobis_dist
+  seurat_obj$mahal_dist_nCount <- mahalanobis_dist 
   mahal.fil <- qchisq(threshold_mahalanobis, df = ncol(ncounts_data))
   message(paste0("Mahalanobis threshold: ", round(mahal.fil, 3)))
-  
+
+  # Removes cells with mahalanobis threshold
   cells_to_remove <- rownames(seurat_obj@meta.data)[seurat_obj$mahal_dist_nCount > mahal.fil]
   message(paste0("Removing ", length(cells_to_remove), " cells (outliers by nCount_RNA)"))
   
@@ -366,14 +368,14 @@ dim(seurat_filtered)
 # Normalization, Scaling and PCA
 # ============================================================================
 ```{r}
-## Normalize the data
+## Normalize the data to make the cells comparable
 seurat_processed <- NormalizeData(seurat_filtered,
                                  normalization.method = "LogNormalize")
 
 ## Find highly variable genes
 seurat_processed <- FindVariableFeatures(seurat_processed, selection.method = "vst", nfeatures = 2500)
 
-## Scale the data
+## Scale the data to prevent highly expressing genes from dominating
 seurat_processed <- ScaleData(seurat_processed) 
 
 ## Run PCA on scaled data
@@ -393,7 +395,7 @@ num_PCs <- min(which(cum_var >= 0.95))  # first PC where cumulative variance >= 
 cat(" Number of PC's for 95% variance is:", num_PCs)
 
 elbow_plot <- ElbowPlot(seurat_processed, ndims = 100, reduction = 'pca')+
-  labs(title = "PCA Elbow Plot for Dimensionality Selection")
+  labs(title = "PCA Elbow Plot for Dimensionality Selection") # To select the number of PCs which have max variance
 print(elbow_plot)
 
 ggsave(file.path(plotDir, paste0(study_id, "_ElbowPlot.png")),
@@ -413,7 +415,7 @@ library(glue)
 seurat_processed <- RunUMAP(seurat_processed, dims = 1:35)
 seurat_processed <- FindNeighbors(seurat_processed, dims = 1:35, reduction = "pca", graph.name = "pca_nn")
 
-seurat_processed <- FindClusters(seurat_processed, resolution = 0.8,graph.name = "pca_nn", cluster.name = "pca_clusters") 
+seurat_processed <- FindClusters(seurat_processed, resolution = 0.8,graph.name = "pca_nn", cluster.name = "pca_clusters") # Resolution decides the granularity of cell clustering
 n_clusters <- length(unique(seurat_processed$pca_clusters))
 cat(glue("Clustering complete. Number of clusters: {n_clusters}\n"))
 
@@ -601,4 +603,5 @@ batch_cor_plot <- ggplot(mix_df_combined1, aes(x = batch, y = frac_same_batch, f
 print(batch_cor_plot)
 
 ggsave(filename = paste0(plotDir,"batch_correction_barplot_combined.png"), plot = batch_cor_plot, width = 23, height = 8, dpi = 300)
+
 ```
