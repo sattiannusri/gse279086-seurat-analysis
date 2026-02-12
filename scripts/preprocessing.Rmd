@@ -32,6 +32,7 @@ library(SingleCellExperiment)
 # Data acquisition and Organization
 # ============================================================================
 ```{r}
+# Create directories for better workflow
 baseDir   <- "/kaggle/working"
 rawDir    <- file.path(baseDir,"raw")
 inputDir  <- file.path(baseDir, "input")
@@ -43,6 +44,7 @@ dir.create(inputDir,  showWarnings = FALSE)
 dir.create(outputDir, showWarnings = FALSE)
 dir.create(plotDir,   showWarnings = FALSE)
 
+# Fetch the dataset
 system(
   "curl -L 'https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE279086&format=file' -o GSE279086_RAW.tar"
 )
@@ -107,8 +109,8 @@ seurat_list <- lapply(sample_dirs, function(sdir) {
   obj <- CreateSeuratObject(
     counts = counts,
     project = "GSE279086",
-    min.cells = 3,
-    min.features = 200
+    min.cells = 3, # keep features that are expressed in atleast 3 cells
+    min.features = 200 # keep cells that express atleast 200 genes
   )
 
   obj$orig.ident <- gsm_id
