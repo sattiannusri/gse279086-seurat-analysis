@@ -40,6 +40,14 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Harmony-based batch correction
 - UMAP visualization before and after integration
 
+## UMAP Visualization
+
+### Before Batch Correction
+![UMAP Before](plots/GSE279086_RawPCA_sample.png)
+
+### After Harmony Batch Correction
+![UMAP After](plots/GSE279086_Harmony_sample.png)
+
 3. Cell Type Annotation
 - Automated cell type annotation
 - Calculation of cell-type proportions by condition
