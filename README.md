@@ -21,9 +21,14 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Groups: Type 1 Diabetes (T1D) and Controls
 - Data Type: Single-cell RNA sequencing
 
+# Repository Organization
+- scripts/ – Source code files used for analysis (.Rmd, ipynb and notebook scripts).
+- script_runs/ – Rendered HTML reports showing executed code and results.
+- plots/ – Figures generated during the analysis workflow.
+- tables/ – Tabular outputs including cell proportions and marker gene results.
+
 # Analysis Workflow
 1. Preprocessing
-- Code: scripts/preprocessing.rmd
 - Seurat object creation and metadata preparation
 - Initial data handling prior to filtering
-- Result: script_runs/preprocessing.html and plots/
+
