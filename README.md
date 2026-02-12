@@ -1,27 +1,29 @@
-# Single-Cell RNA-seq Analysis of GSE279086 Using Seurat
+# Single-Cell Transcriptomic Analysis of Type 1 Diabetes–Associated Kidney Disease (GSE279086)
 
-This repository contains a comprehensive single-cell RNA sequencing (scRNA-seq) analysis of the publicly available GSE279086 dataset. The analysis was conducted using the Seurat (v5) framework in an R environment (Kaggle Notebook).
-The project focuses on exploring transcriptional diversity at single-cell resolution and identifying biologically meaningful cellular subpopulations.
+This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the GSE279086 dataset to investigate cellular and transcriptional alterations in Type 1 Diabetes (T1D)–associated kidney disease. The dataset includes kidney samples from T1D patients and healthy controls, enabling comparative analysis to identify disease-associated cellular heterogeneity, gene expression changes, and pathway-level alterations.
 
-# Study Goals
-The objectives of this analysis are to:
-1. Process and curate raw single-cell RNA-seq data from GSE279086
-2. Perform rigorous quality control to remove low-quality cells
-3. Identify highly variable genes driving cellular heterogeneity
-4. Reduce dimensionality to visualize cellular structure
-5. Detect transcriptionally distinct clusters
-6. Determine cluster-specific marker genes
-7. Interpret cellular composition based on gene expression patterns
+# Study Objectives
+
+- Characterize kidney cell populations in T1D and control samples
+- Perform quality control and batch correction
+- Integrate samples across conditions
+- Annotate cell types using automated methods
+- Identify cluster-specific marker genes
+- Perform differential expression analysis (T1D vs Control)
+- Conduct Reactome pathway enrichment analysis
 
 # Dataset Information
-- Accession Number: GSE279086
-- Data Repository: NCBI Gene Expression Omnibus (GEO)
-- Sequencing Type: Single-cell RNA sequencing
-- Organism: Homo sapiens
-- Data Format: Raw count matrices
 
-# Computational Environment
-- Platform: Kaggle R Notebook
-- Programming Language: R
-- R Version: 4.4.0
-- Core Analysis Package: Seurat (v5.1.0)
+- Accession: GSE279086
+- Source: NCBI GEO
+- Organism: Homo sapiens
+- Tissue: Kidney
+- Groups: Type 1 Diabetes (T1D) and Controls
+- Data Type: Single-cell RNA sequencing
+
+# Analysis Workflow
+1. Preprocessing
+Code: scripts/preprocessing.rmd
+- Seurat object creation and metadata preparation
+- Initial data handling prior to filtering
+Result: script_runs/preprocessing.html and plots/
