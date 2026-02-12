@@ -55,7 +55,9 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Differential expression analysis (T1D vs Control)
 - Reactome pathway enrichment
 
-![GSEA Plot](plots/cell_gsea/aTAL.png)
+<p align="center">
+  <img src="plots/cell_gsea/aTAL.png" width="70%">
+</p>
 
 # Computational Environment
 
