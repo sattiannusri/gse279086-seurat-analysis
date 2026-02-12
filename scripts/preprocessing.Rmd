@@ -10,21 +10,14 @@
 # ============================================================================
 ```{r}
 library(Seurat)
-library(SeuratDisk)
 library(dplyr)
 library(R.utils)  
 library(ggplot2)
 library(ggExtra)
 library(RColorBrewer)
 library(openxlsx)
-library(dplyr)
 library(scales)
-library(HGNChelper)
-library(dittoSeq)
 library(harmony)
-library(batchelor)
-library(zellkonverter)
-library(SingleCellExperiment)
 ```
 
 
@@ -106,7 +99,7 @@ seurat_list <- lapply(sample_dirs, function(sdir) {
 
   counts <- Read10X(data.dir = sdir)
 
-  obj <- CreateSeuratObject(
+  obj <- CreateSeuratObject(            # Create seurat object for each sample
     counts = counts,
     project = "GSE279086",
     min.cells = 3, # keep features that are expressed in atleast 3 cells
@@ -118,7 +111,7 @@ seurat_list <- lapply(sample_dirs, function(sdir) {
 })
 
 names(seurat_list) <- basename(sample_dirs)
-length(seurat_list)
+length(seurat_list) # Check if length is same as number of sample dir or samples
 ```
 
 
@@ -155,3 +148,4 @@ dim(seurat_combined)
 rownames(seurat_combined)[1:5]
 colnames(seurat_combined)[1:5]
 ```
+
