@@ -1,0 +1,401 @@
+# ============================================================================
+# Single-cell RNA-seq Analysis of GSE279086 using Seurat
+# Dataset: GSE279086
+# Description: deg and pathway analysis
+# ============================================================================
+
+
+# ============================================================================
+# Loading libraries
+# ============================================================================
+```{r}
+library(clusterProfiler)
+library(ReactomePA)
+library(tidyverse)
+library(org.Hs.eg.db)
+library(dplyr)
+library(ggplot2)
+library(enrichplot)
+library(zellkonverter)
+library(Seurat)
+library(SingleCellExperiment)
+library(MAST)
+set.seed(42) 
+```
+
+
+# ============================================================================
+# Reading the annotated data
+# ============================================================================
+```{r}
+sce <- readH5AD("/content/GSE279086_celltypist.h5ad")
+seurat_obj <- as.Seurat(
+  sce,
+  counts = "counts",
+  data = "logcounts"
+)
+#saveRDS(seurat_obj, "/content/GSE183276_with_celltypist.rds") - save for future use
+
+# Check colnames should be just celltypes not condition, else run the cell once more
+colnames(seurat_obj@meta.data)
+
+# Remove _T1D, _Control from majority_voting
+seurat_obj$majority_voting <- gsub("_(T1D|Control)$", "", seurat_obj$majority_voting)
+
+# Get majority voting counts for each cell type per condition
+table(seurat_obj$condition, seurat_obj$majority_voting)
+
+# Set assay for the obj same as original experiment
+DefaultAssay(seurat_obj) <- "originalexp"
+celltypes <- sort(unique(seurat_obj$majority_voting))
+celltypes
+
+celltypes <- gsub("-", "_", celltypes)
+celltypes
+```
+
+
+# ============================================================================
+# Run MAST per cell type
+# ============================================================================
+```{r}
+# Set the directory
+baseDir  <- "/content"
+deg_path <- file.path(baseDir, "DEG_MAST_T1D_vs_Control")
+dir.create(deg_path, showWarnings = FALSE, recursive = TRUE)
+
+
+# MAST T1D vs Control
+run_mast_per_celltype_T1D_vs_Control <- function(
+  seu,
+  celltype_col = "majority_voting",
+  condition_col = "condition",
+  outdir = deg_path,
+  min_cells_per_group = 20
+) {
+
+  meta <- seu@meta.data
+  celltypes <- sort(unique(meta[[celltype_col]]))
+
+  for (ct in celltypes) {
+
+    cat("\n▶ Processing cell type:", ct, "\n")
+
+    cells_ct <- rownames(meta)[meta[[celltype_col]] == ct]
+    cond_tab <- table(meta[cells_ct, condition_col])
+
+    # Check both groups exist
+    if (!all(c("T1D", "Control") %in% names(cond_tab))) {
+      cat("  ❌ T1D or Control missing → skipping\n")
+      next
+    }
+
+    # Minimum cells check
+    if (any(cond_tab[c("T1D", "Control")] < min_cells_per_group)) {
+      cat("  ❌ Not enough cells → skipping\n")
+      next
+    }
+
+    # Subset object
+    seu_ct <- subset(seu, cells = cells_ct)
+    DefaultAssay(seu_ct) <- "originalexp"
+    seu_ct <- NormalizeData(seu_ct, verbose = FALSE)
+
+    Idents(seu_ct) <- condition_col
+
+    # Run MAST
+    deg <- FindMarkers(
+      seu_ct,
+      ident.1 = "T1D",
+      ident.2 = "Control",
+      test.use = "MAST",
+      logfc.threshold = 0,
+      min.pct = 0.1,
+      latent.vars = c("nCount_RNA", "percent.mt")
+    )
+
+    if (nrow(deg) == 0) {
+      cat("  ⚠ No DEGs detected\n")
+      next
+    }
+
+    deg$gene <- rownames(deg)
+
+    ct_clean <- gsub("[^a-zA-Z0-9]", "_", ct)
+
+    out_file <- file.path(
+      outdir,
+      paste0("DEG_", ct_clean, "_T1D_vs_Control.csv")
+    )
+
+    write.csv(deg, out_file, row.names = FALSE)
+
+    cat("  ✔ Saved:", out_file, "\n")
+  }
+}
+
+
+# Run DEG analysis
+run_mast_per_celltype_T1D_vs_Control(
+  seu = seurat_obj,
+  celltype_col = "majority_voting",
+  condition_col = "condition"
+)
+
+
+# Get DEG files
+deg_files <- list.files(
+  deg_path,
+  pattern = "^DEG_.*\\.csv$",
+  full.names = TRUE
+)
+
+cat("\nFound", length(deg_files), "DEG files\n")
+
+
+# Fix gene column name if needed
+for (file in deg_files) {
+
+  df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+
+  if (colnames(df)[1] %in% c("", "X")) {
+    colnames(df)[1] <- "gene"
+    write.csv(df, file, row.names = FALSE)
+  }
+}
+
+
+# Build DEG summary
+deg_summary <- data.frame(
+  CellType = character(),
+  Upregulated = integer(),
+  Downregulated = integer(),
+  Total_DEGs = integer(),
+  stringsAsFactors = FALSE
+)
+
+for (file in deg_files) {
+
+  deg_data <- read.csv(file)
+
+  if (!all(c("avg_log2FC", "p_val_adj") %in% colnames(deg_data))) {
+    warning(paste("Skipping (missing columns):", basename(file)))
+    next
+  }
+
+  up   <- sum(deg_data$avg_log2FC > 0 & deg_data$p_val_adj < 0.05)
+  down <- sum(deg_data$avg_log2FC < 0 & deg_data$p_val_adj < 0.05)
+
+  celltype <- gsub("^DEG_(.*?)_T1D_vs_Control\\.csv$", "\\1", basename(file))
+
+  deg_summary <- rbind(
+    deg_summary,
+    data.frame(
+      CellType = celltype,
+      Upregulated = up,
+      Downregulated = down,
+      Total_DEGs = up + down
+    )
+  )
+}
+
+deg_summary <- deg_summary %>%
+  arrange(desc(Total_DEGs))
+
+
+# Print + Save Summary
+print(deg_summary)
+
+summary_file <- file.path(deg_path, "DEGsummary_table.csv")
+
+write.csv(
+  deg_summary,
+  summary_file,
+  row.names = FALSE
+)
+
+cat("\n✔ DEG summary saved to:", summary_file, "\n")
+```
+
+
+# ============================================================================
+# Gene set enrichment analysis - Reactome pathways
+# ============================================================================
+```{r}
+# Get reactome pathways for enriched genes per cell type
+all_pathways_df <- data.frame()
+
+for (file_path in deg_files) {
+
+  file_name <- basename(file_path)
+  message("\n==============================")
+  message("▶ Processing file: ", file_name)
+
+  ## ---- Cell type extraction ----
+  celltype <- sub("^DEG_(.*?)_T1D_vs_Control\\.csv$", "\\1", file_name)
+
+  if (celltype == file_name) {
+    warning("⚠ Celltype extraction FAILED for file: ", file_name)
+    next
+  }
+
+  celltype_clean <- gsub("[^a-zA-Z0-9]", "_", celltype)
+  condition <- "T1D_vs_Control"
+
+  message("  ✔ Cell type identified: ", celltype)
+
+  ## ---- Read DEG file ----
+  res <- tryCatch(
+    read.csv(file_path, stringsAsFactors = FALSE),
+    error = function(e) {
+      message(" Failed to read file: ", e$message)
+      return(NULL)
+    }
+  )
+  if (is.null(res)) next
+
+  message("  ✔ DEG rows read: ", nrow(res))
+
+  ## ---- Required columns ----
+  if (!all(c("gene", "avg_log2FC") %in% colnames(res))) {
+    warning("  ⚠ Missing required columns in: ", file_name)
+    next
+  }
+
+  ## ---- SYMBOL → ENTREZ ----
+  ncbi_map <- suppressMessages(
+    clusterProfiler::bitr(
+      res$gene,
+      fromType = "SYMBOL",
+      toType = "ENTREZID",
+      OrgDb = org.Hs.eg.db
+    )
+  )
+
+  message("  ✔ Genes mapped to ENTREZ: ", nrow(ncbi_map))
+
+  res_mapped <- res %>%
+    left_join(ncbi_map, by = c("gene" = "SYMBOL")) %>%
+    filter(!is.na(ENTREZID)) %>%
+    distinct(ENTREZID, .keep_all = TRUE)
+
+  message(" Genes after filtering: ", nrow(res_mapped))
+
+  ## ---- Ranked gene list ----
+  gene_list <- res_mapped$avg_log2FC
+  names(gene_list) <- res_mapped$ENTREZID
+  gene_list <- sort(gene_list, decreasing = TRUE)
+
+  message("  ✔ Ranked gene list length: ", length(gene_list))
+
+  if (length(gene_list) < 20) {
+    message("  ⏭ Skipping GSEA: too few genes")
+    next
+  }
+
+  ## ---- Run GSEA ----
+  message(" Running Reactome GSEA...")
+
+  gsea_res <- tryCatch(
+    gsePathway(
+      geneList = gene_list,
+      organism = "human",
+      eps = 0,
+      verbose = FALSE
+    ),
+    error = function(e) {
+      message("  GSEA FAILED: ", e$message)
+      return(NULL)
+    }
+  )
+
+  if (is.null(gsea_res) || nrow(gsea_res@result) == 0) {
+    message("  ⏭ No significant pathways")
+    next
+  }
+
+  ## ---- Make readable ----
+  gsea_res <- setReadable(
+    gsea_res,
+    OrgDb = org.Hs.eg.db,
+    keyType = "ENTREZID"
+  )
+
+  pathways <- gsea_res@result %>%
+    filter(
+      !is.na(Description),
+      !is.na(NES),
+      !is.na(p.adjust),
+      !is.na(setSize)
+    )
+
+  message(" Valid pathways: ", nrow(pathways))
+
+  if (nrow(pathways) == 0) next
+
+  ## ---- Add metadata ----
+  pathways$CellType  <- celltype
+  pathways$Condition <- condition
+
+  all_pathways_df <- rbind(all_pathways_df, pathways)
+
+  ## ---- Save per-cell CSV ----
+  out_csv <- file.path(
+    deg_path,
+    paste0(celltype_clean, "_Reactome_GSEA_", condition, ".csv")
+  )
+  write.csv(pathways, out_csv, row.names = FALSE)
+
+  message("  ✔ GSEA CSV written for ", celltype)
+}
+gsea_png_files <- c()
+
+for (ct in unique(all_pathways_df$CellType)) {
+
+  df_ct <- all_pathways_df %>%
+    filter(CellType == ct)
+
+  if (nrow(df_ct) == 0) {
+    message(" No pathways to plot")
+    next
+  }
+
+  ## ---- Select top pathways ----
+  top_pathways <- df_ct %>%
+    arrange(desc(abs(NES))) %>%
+    slice_head(n = 10)
+
+ if (nrow(top_pathways) == 0) next
+
+  ## ---- Order pathways by NES ----
+  top_pathways$Description <- factor(
+    top_pathways$Description,
+    levels = top_pathways$Description[order(top_pathways$NES)]
+  )
+
+  ## ---- Plot ----
+  p <- ggplot(
+    top_pathways,
+    aes(x = NES, y = Description, color = p.adjust, size = setSize)
+  ) +
+    geom_point() +
+    theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 7, face = "bold"),
+    axis.text.x = element_text(size = 7, face = "bold")
+  )
+  ## ---- Save PNG ----
+  ct_clean <- gsub("[^a-zA-Z0-9]", "_", ct)
+
+  png_file <- file.path(
+    deg_path,
+    paste0(ct_clean, ".png")
+  )
+
+  png(png_file, width = 9, height = 6, units = "in", res = 300)
+  print(p)
+  dev.off()
+
+  gsea_png_files <- c(gsea_png_files, png_file)
+}
+```
