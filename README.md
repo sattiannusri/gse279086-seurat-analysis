@@ -32,3 +32,26 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Seurat object creation and metadata preparation
 - Initial data handling prior to filtering
 
+2. Quality Control & Batch Correction
+- Cell filtering and normalization
+- PCA and elbow plot assessment
+- Harmony-based batch correction
+- UMAP visualization before and after integration
+
+3. Cell Type Annotation
+- Automated cell type annotation
+- Calculation of cell-type proportions by condition
+
+4. Differential Expression & Reactome Analysis
+- Identification of unique marker genes
+- Differential expression analysis (T1D vs Control)
+- Reactome pathway enrichment
+
+# Computational Environment
+- Platform: Kaggle R Notebook
+- R Version: 4.4.0
+- Seurat Version: 5.1.0
+
+# Key Packages
+Seurat, Seuratdisk, Celltypist, Zellkonverter, Harmony, dplyr, ggplot2, tidyverse, HGNChelper, dittoseq, batchelor, SingleCellExperiment,ReactomePA, clusterProfiler
+
