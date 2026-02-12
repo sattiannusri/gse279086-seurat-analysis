@@ -1,3 +1,4 @@
 - [preprocessing](https://sattiannusri.github.io/gse279086-seurat-analysis/script_runs/preprocessing.html)
 - [qc_batch_correction](https://sattiannusri.github.io/gse279086-seurat-analysis/script_runs/qc_batch_correction.html)
 - [cell_annotation](https://sattiannusri.github.io/gse279086-seurat-analysis/script_runs/cell_annotation.html)
+- [deg_reactome](https://sattiannusri.github.io/gse279086-seurat-analysis/script_runs/deg_reactome.html)
