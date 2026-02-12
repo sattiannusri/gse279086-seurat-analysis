@@ -23,7 +23,7 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 
 # Analysis Workflow
 1. Preprocessing
-Code: scripts/preprocessing.rmd
+- Code: scripts/preprocessing.rmd
 - Seurat object creation and metadata preparation
 - Initial data handling prior to filtering
-Result: script_runs/preprocessing.html and plots/
+- Result: script_runs/preprocessing.html and plots/
