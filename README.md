@@ -30,21 +30,21 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 
 # Analysis Workflow
 
-## Preprocessing
+# 1. Preprocessing
 - Seurat object creation and metadata preparation
 - Initial data handling prior to filtering
 
-## Quality Control & Batch Correction
+# 2. Quality Control & Batch Correction
 - Cell filtering and normalization
 - PCA and elbow plot assessment
 - Harmony-based batch correction
 - UMAP visualization before and after integration
 
-## Cell Type Annotation
+# 3. Cell Type Annotation
 - Automated cell type annotation
 - Calculation of cell-type proportions by condition
 
-## Differential Expression & Reactome Analysis
+# 4. Differential Expression & Reactome Analysis
 - Identification of unique marker genes
 - Differential expression analysis (T1D vs Control)
 - Reactome pathway enrichment
