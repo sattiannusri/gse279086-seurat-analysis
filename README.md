@@ -40,7 +40,6 @@ This project presents a single-cell RNA sequencing (scRNA-seq) analysis of the G
 - Harmony-based batch correction
 - UMAP visualization before and after integration
 
-## UMAP Visualization
 
 <p align="center">
   <img src="plots/GSE279086_RawPCA_sample.png" width="45%">
